@@ -23,9 +23,9 @@ FROM scratch
 
 LABEL org.opencontainers.image.title="hello-docker" \
       org.opencontainers.image.description="Simple Go HTTP server" \
-      org.opencontainers.image.source="https://github.com//hello-docker" \
+      org.opencontainers.image.source="https://github.com//hello-docker" 
 
-USER go:go
+USER 65532:65532
 
 COPY --from=builder /server /server
 
