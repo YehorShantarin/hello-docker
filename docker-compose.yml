@@ -1,0 +1,78 @@
+networks:
+  shared_network:
+    name: app_external
+  internal:
+    name: app_internal
+    internal: true
+
+volumes:
+  redis_data:
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: app
+    labels:
+      app.name: "course-app"
+      app.component: "api"
+      app.version: "1.0.0"
+    env_file:
+      - .env
+    environment:
+      - APP_STORE=redis
+      - APP_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "8080:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/healthz')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - shared_network
+      - internal
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    labels:
+      app.name: "course-app"
+      app.component: "cache"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+    networks:
+      - internal
