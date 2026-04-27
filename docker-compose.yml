@@ -6,14 +6,30 @@ networks:
     internal: true
 
 volumes:
-  redis_data:
+  appdata:
 
 services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --providers.swarm=true
+      - --providers.swarm.exposedbydefault=false
+      - --providers.swarm.network=app_external
+      - --entrypoints.web.address=:80
+    ports:
+      - "8080:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    networks:
+      - shared_network
+
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: app
+    image: shntrn/docker:hw5
     labels:
       app.name: "course-app"
       app.component: "api"
@@ -23,11 +39,6 @@ services:
     environment:
       - APP_STORE=redis
       - APP_REDIS_URL=redis://redis:6379/0
-    depends_on:
-      redis:
-        condition: service_healthy
-    ports:
-      - "8080:8000"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/healthz')"]
@@ -36,10 +47,16 @@ services:
       retries: 3
       start_period: 10s
     deploy:
+      replicas: 2
       resources:
         limits:
           cpus: "0.5"
           memory: 256M
+      labels:
+        traefik.enable: "true"
+        traefik.http.routers.app.rule: "PathPrefix(`/`)"
+        traefik.http.routers.app.entrypoints: "web"
+        traefik.http.services.app.loadbalancer.server.port: "8000"
     logging:
       driver: json-file
       options:
@@ -51,12 +68,12 @@ services:
 
   redis:
     image: redis:alpine
-    container_name: redis
+    command: redis-server --save 60 1
     labels:
       app.name: "course-app"
       app.component: "cache"
     volumes:
-      - redis_data:/data
+      - appdata:/data
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -69,6 +86,9 @@ services:
         limits:
           cpus: "0.25"
           memory: 128M
+      placement:
+        constraints:
+          - node.role == manager
     logging:
       driver: json-file
       options:
