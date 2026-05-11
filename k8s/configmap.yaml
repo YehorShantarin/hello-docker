@@ -4,5 +4,4 @@ metadata:
   name: course-app-config
 
 data:
-  APP_MESSAGE: "Hello from Kubernetes v2 v2"
-  APP_REDIS_URL: "redis://redis:6111/0"
+  APP_MESSAGE: "Hello from Kubernetes"
