@@ -1,0 +1,69 @@
+replicaCount: 2
+
+image:
+  repository: shntrn/docker
+  tag: hw5
+  pullPolicy: IfNotPresent
+
+strategy:
+  type: Recreate
+
+config:
+  appMessage: "Hello from Kubernetes"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  host: course-app.local
+  path: /
+  pathType: Prefix
+  tls:
+    enabled: true
+    secretName: course-app-tls
+
+probes:
+  liveness:
+    path: /healthz
+    port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 20
+    timeoutSeconds: 3
+    failureThreshold: 3
+  readiness:
+    path: /readyz
+    port: 8000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+redis:
+  enabled: true
+  architecture: standalone
+  global:
+    security:
+      allowInsecureImages: true
+  image:
+    repository: bitnamilegacy/redis
+    tag: latest
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+  replica:
+    replicaCount: 0

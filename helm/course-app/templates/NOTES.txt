@@ -1,0 +1,10 @@
+Release {{ .Release.Name }} installed in namespace {{ .Release.Namespace }}.
+
+App URL:
+{{- if .Values.ingress.enabled }}
+  http{{ if .Values.ingress.tls.enabled }}s{{ end }}://{{ .Values.ingress.host }}{{ .Values.ingress.path }}
+{{- else }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "course-app.fullname" . }} 8080:{{ .Values.service.port }}
+{{- end }}
+
+Redis host: {{ include "course-app.redisHost" . }}:6379
