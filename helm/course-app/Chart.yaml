@@ -1,0 +1,17 @@
+apiVersion: v2
+name: course-app
+description: Helm chart for course-app with Redis backend (homework lesson 11)
+type: application
+
+# Chart version
+version: 0.1.0
+
+# App Version
+appVersion: "hw11"
+
+# Redis Dependencies
+dependencies:
+  - name: redis
+    version: "20.x.x"
+    repository: https://charts.bitnami.com/bitnami
+    condition: redis.enabled
